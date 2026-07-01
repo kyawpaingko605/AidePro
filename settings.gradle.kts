@@ -18,6 +18,9 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
+        
+        // ✅ Sora Editor Repository ထည့်ပါ
+        maven { url = uri("https://maven.pkg.github.com/Rosemoe/sora-editor") }
     }
 }
 
