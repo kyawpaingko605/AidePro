@@ -1,0 +1,9 @@
+#!/system/bin/sh
+# javac wrapper for AIDE Pro — delegates to ECJ (Eclipse Compiler for Java)
+# ECJ is a full Java compiler compatible with javac flags
+#
+# Usage: same as javac — e.g.  javac -d out/ src/MyClass.java
+# Requires: Java runtime (dalvikvm or app_process on Android)
+#
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+exec dalvikvm -cp "$SCRIPT_DIR/ecj.jar" org.eclipse.jdt.internal.compiler.batch.Main "$@"
