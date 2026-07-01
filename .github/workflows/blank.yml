@@ -1,8 +1,8 @@
-name: Android APK Build
+name: Build Android APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -10,12 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: 17
           distribution: 'temurin'
       
       - name: Setup Android SDK
@@ -28,29 +29,29 @@ jobs:
           fi
           chmod +x gradlew
       
-      - name: Fix gradle.properties
+      - name: Configure gradle.properties
         run: |
-          # gradle.properties ရှိမရှိ စစ်ပြီး AndroidX ထည့်ပေး
-          if [ ! -f gradle.properties ]; then
-            echo "Creating gradle.properties..."
-            touch gradle.properties
+          cat > gradle.properties << 'EOF'
+          android.useAndroidX=true
+          android.enableJetifier=true
+          org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m
+          org.gradle.parallel=true
+          org.gradle.caching=true
+          EOF
+      
+      - name: Add Sora Editor repository to settings.gradle.kts
+        run: |
+          # Sora repository ထည့်ပြီးပြီလား စစ်ပါ
+          if ! grep -q "sora-editor" settings.gradle.kts; then
+            echo '        maven { url = uri("https://maven.pkg.github.com/Rosemoe/sora-editor") }' >> settings.gradle.kts
           fi
           
-          # AndroidX settings ထည့်ပေး (မရှိရင်)
-          if ! grep -q "android.useAndroidX" gradle.properties; then
-            echo "android.useAndroidX=true" >> gradle.properties
-            echo "android.enableJetifier=true" >> gradle.properties
-            echo "org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m" >> gradle.properties
-            echo "org.gradle.parallel=true" >> gradle.properties
-            echo "org.gradle.caching=true" >> gradle.properties
-          fi
-          
-          echo "✅ gradle.properties content:"
-          cat gradle.properties
+          echo "📄 settings.gradle.kts content:"
+          cat settings.gradle.kts
       
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
-        
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
+      
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
