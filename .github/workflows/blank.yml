@@ -1,4 +1,4 @@
-name: Android APK Build (Debug)
+name: Android APK Build
 
 on:
   push:
@@ -17,15 +17,34 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-        
-      - name: Clean project
-        run: ./gradlew clean
-        
-      - name: Build APK with stacktrace
+      
+      # 📌 gradlew မရှိရင် အလိုအလျောက်ထုတ်ပေး
+      - name: Setup Gradle Wrapper
+        run: |
+          if [ ! -f gradlew ]; then
+            echo "⚠️ gradlew not found! Creating wrapper..."
+            gradle wrapper
+            chmod +x gradlew
+          else
+            echo "✅ gradlew found!"
+            chmod +x gradlew
+          fi
+      
+      # 📌 gradlew ရှိပြီးသားဆိုရင်လည်း permission ပေး
+      - name: Ensure gradlew is executable
+        run: |
+          if [ -f gradlew ]; then
+            chmod +x gradlew
+          else
+            echo "❌ gradlew still not found! Check your project structure."
+            exit 1
+          fi
+      
+      - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
+        
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
