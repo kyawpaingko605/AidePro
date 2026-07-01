@@ -18,32 +18,41 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       
-      # 📌 gradlew မရှိရင် အလိုအလျောက်ထုတ်ပေး
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      
       - name: Setup Gradle Wrapper
         run: |
           if [ ! -f gradlew ]; then
-            echo "⚠️ gradlew not found! Creating wrapper..."
             gradle wrapper
-            chmod +x gradlew
-          else
-            echo "✅ gradlew found!"
-            chmod +x gradlew
           fi
+          chmod +x gradlew
       
-      # 📌 gradlew ရှိပြီးသားဆိုရင်လည်း permission ပေး
-      - name: Ensure gradlew is executable
+      - name: Fix gradle.properties
         run: |
-          if [ -f gradlew ]; then
-            chmod +x gradlew
-          else
-            echo "❌ gradlew still not found! Check your project structure."
-            exit 1
+          # gradle.properties ရှိမရှိ စစ်ပြီး AndroidX ထည့်ပေး
+          if [ ! -f gradle.properties ]; then
+            echo "Creating gradle.properties..."
+            touch gradle.properties
           fi
+          
+          # AndroidX settings ထည့်ပေး (မရှိရင်)
+          if ! grep -q "android.useAndroidX" gradle.properties; then
+            echo "android.useAndroidX=true" >> gradle.properties
+            echo "android.enableJetifier=true" >> gradle.properties
+            echo "org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m" >> gradle.properties
+            echo "org.gradle.parallel=true" >> gradle.properties
+            echo "org.gradle.caching=true" >> gradle.properties
+          fi
+          
+          echo "✅ gradle.properties content:"
+          cat gradle.properties
       
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
         
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
